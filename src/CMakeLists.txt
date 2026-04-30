@@ -224,3 +224,31 @@ if(QGC_CUSTOM_BUILD)
 
     message(STATUS "QGC: Custom build configuration applied")
 endif()
+
+# ============================================================================
+# LanotQGCCorePlugin Build Configuration
+# ============================================================================
+
+if(QGC_LANOT_CORE_PLUGIN_BUILD)
+    if(QGC_LANOT_CORE_PLUGIN_QT_COMPONENTS)
+        find_package(Qt6 REQUIRED COMPONENTS ${QGC_LANOT_CORE_PLUGIN_QT_COMPONENTS})
+    endif()
+
+    if(QGC_LANOT_CORE_PLUGIN_SOURCES)
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${QGC_LANOT_CORE_PLUGIN_SOURCES})
+    endif()
+
+    if(QGC_LANOT_CORE_PLUGIN_LIBRARIES)
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${QGC_LANOT_CORE_PLUGIN_LIBRARIES})
+    endif()
+
+    if(QGC_LANOT_CORE_PLUGIN_INCLUDE_DIRECTORIES)
+        target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${QGC_LANOT_CORE_PLUGIN_INCLUDE_DIRECTORIES})
+    endif()
+
+    if(QGC_LANOT_CORE_PLUGIN_DEFINITIONS)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ${QGC_LANOT_CORE_PLUGIN_DEFINITIONS})
+    endif()
+
+    message(STATUS "QGC: LanotQGCCorePlugin build configuration applied")
+endif()

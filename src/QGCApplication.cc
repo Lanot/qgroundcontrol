@@ -31,7 +31,11 @@
 #include "ParameterManager.h"
 #include "PositionManager.h"
 #include "QGCCommandLineParser.h"
-#include "QGCCorePlugin.h"
+
+// CUSTOMIZATION //
+//#include "QGCCorePlugin.h"
+#include "LanotQGCCorePlugin.h"
+
 #include "QGCFileDownload.h"
 #include "ColoredSvgImageProvider.h"
 #include "QGCImageProvider.h"
@@ -330,7 +334,7 @@ bool QGCApplication::_initVideo()
 #endif  // QGC_GST_D3D11_SINK / Q_OS_MACOS
 #endif
 
-    QGCCorePlugin::instance();  // CorePlugin must be initialized before VideoManager for Video Cleanup
+    LanotQGCCorePlugin::instance();  // CorePlugin must be initialized before VideoManager for Video Cleanup
     VideoManager *videoManager = VideoManager::instance();
     videoManager->startGStreamerInit();
     const bool initSucceeded = !_simpleBootTest || videoManager->waitForGStreamerInit();
@@ -343,17 +347,17 @@ void QGCApplication::_initForNormalAppBoot()
     (void) _initVideo();
 
     QQuickStyle::setStyle("Basic");
-    QGCCorePlugin::instance()->init();
+    LanotQGCCorePlugin::instance()->init();
     MAVLinkProtocol::instance()->init();
     MultiVehicleManager::instance()->init();
-    _qmlAppEngine = QGCCorePlugin::instance()->createQmlApplicationEngine(this);
+    _qmlAppEngine = LanotQGCCorePlugin::instance()->createQmlApplicationEngine(this);
     QObject::connect(_qmlAppEngine, &QQmlApplicationEngine::objectCreationFailed, this, QCoreApplication::quit, Qt::QueuedConnection);
 
     // Must register before createRootWindow — root QML references QGCColoredImage which resolves image://coloredsvg/... at load time.
     _qmlAppEngine->addImageProvider(_qgcImageProviderId, new QGCImageProvider());
     _qmlAppEngine->addImageProvider(QLatin1String(ColoredSvgImageProvider::ProviderId), new ColoredSvgImageProvider());
 
-    QGCCorePlugin::instance()->createRootWindow(_qmlAppEngine);
+    LanotQGCCorePlugin::instance()->createRootWindow(_qmlAppEngine);
 
     AudioOutput::instance()->init(SettingsManager::instance()->appSettings()->audioVolume(), SettingsManager::instance()->appSettings()->audioMuted());
     FollowMe::instance()->init();
@@ -558,7 +562,7 @@ void QGCApplication::_checkForNewVersion()
         return;
     }
 
-    const QString versionCheckFile = QGCCorePlugin::instance()->stableVersionCheckFileUrl();
+    const QString versionCheckFile = LanotQGCCorePlugin::instance()->stableVersionCheckFileUrl();
     if (!versionCheckFile.isEmpty()) {
         QGCFileDownload *const download = new QGCFileDownload(this);
         (void) connect(download, &QGCFileDownload::finished, this, &QGCApplication::_qgcCurrentStableVersionDownloadComplete);
@@ -584,7 +588,7 @@ void QGCApplication::_qgcCurrentStableVersionDownloadComplete(bool success, cons
                 if (_majorVersion < majorVersion ||
                         ((_majorVersion == majorVersion) && (_minorVersion < minorVersion)) ||
                         ((_majorVersion == majorVersion) && (_minorVersion == minorVersion) && (_buildVersion < buildVersion))) {
-                    showAppMessage(tr("There is a newer version of %1 available. You can download it from %2.").arg(applicationName()).arg(QGCCorePlugin::instance()->stableDownloadLocation()), tr("New Version Available"));
+                    showAppMessage(tr("There is a newer version of %1 available. You can download it from %2.").arg(applicationName()).arg(LanotQGCCorePlugin::instance()->stableDownloadLocation()), tr("New Version Available"));
                 }
             }
         }
@@ -760,7 +764,7 @@ void QGCApplication::shutdown()
         VideoManager::instance()->cleanup();
     }
 
-    QGCCorePlugin::instance()->cleanup();
+    LanotQGCCorePlugin::instance()->cleanup();
 
     if (_runningUnitTests || _simpleBootTest) {
         const QSettings settings;

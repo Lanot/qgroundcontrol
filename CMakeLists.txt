@@ -47,6 +47,20 @@ if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/custom")
     include(CustomOverrides)
 endif()
 
+
+# ============================================================================
+# CUSTOMIZATION: LanotQGCCorePlugin
+# ============================================================================
+
+# Load default options and allow custom builds to override
+if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/LanotQGCCorePlugin")
+    message(STATUS "QGC: LanotQGCCorePlugin build directory detected")
+    set(QGC_LANOT_CORE_PLUGIN_BUILD ON)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/LanotQGCCorePlugin/cmake")
+    include(LanotQGCCorePluginOverrides)
+endif()
+
+
 # Disable testing if not explicitly enabled
 if(NOT QGC_BUILD_TESTING)
     set(BUILD_TESTING OFF CACHE INTERNAL "Disable testing by default" FORCE)
@@ -266,6 +280,15 @@ endif()
 
 if(QGC_CUSTOM_BUILD)
     add_subdirectory(custom)
+endif()
+
+
+# ============================================================================
+# CUSTOMIZATION: LanotQGCCorePlugin
+# ============================================================================
+
+if(QGC_LANOT_CORE_PLUGIN_BUILD)
+    add_subdirectory(LanotQGCCorePlugin)
 endif()
 
 # ============================================================================
