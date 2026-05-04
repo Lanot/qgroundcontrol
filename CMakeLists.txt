@@ -49,15 +49,15 @@ endif()
 
 
 # ============================================================================
-# CUSTOMIZATION: LanotQGCCorePlugin
+# CUSTOMIZATION: LanotPlugin
 # ============================================================================
 
 # Load default options and allow custom builds to override
-if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/LanotQGCCorePlugin")
-    message(STATUS "QGC: LanotQGCCorePlugin build directory detected")
-    set(QGC_LANOT_CORE_PLUGIN_BUILD ON)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/LanotQGCCorePlugin/cmake")
-    include(LanotQGCCorePluginOverrides)
+if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/LanotPlugin")
+    message(STATUS "QGC: LanotPlugin build directory detected")
+    set(LANOT_PLUGIN_BUILD ON)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/LanotPlugin/cmake")
+    include(LanotPluginOverrides)
 endif()
 
 
@@ -284,11 +284,11 @@ endif()
 
 
 # ============================================================================
-# CUSTOMIZATION: LanotQGCCorePlugin
+# CUSTOMIZATION: LanotPlugin
 # ============================================================================
 
-if(QGC_LANOT_CORE_PLUGIN_BUILD)
-    add_subdirectory(LanotQGCCorePlugin)
+if(LANOT_PLUGIN_BUILD)
+    add_subdirectory(LanotPlugin)
 endif()
 
 # ============================================================================

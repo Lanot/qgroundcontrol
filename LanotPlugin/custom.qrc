@@ -1,0 +1,10 @@
+<RCC>
+    <!-- @See: custom-example/custom.qrc -->
+    <!--
+    <qresource prefix="/Custom/qml">
+        <file alias="QGroundControl/FlyView/CustomGuidedActionsController.qml">src/CustomGuidedActionsController.qml</file>
+        <file alias="QGroundControl/FlyView/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
+        <file alias="QGroundControl/FlyView/FlyViewToolStripActionList.qml">src/FlyViewToolStripActionList.qml</file>
+    </qresource>
+    -->
+</RCC>
