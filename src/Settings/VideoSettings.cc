@@ -163,6 +163,57 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpUrl)
     return _tcpUrlFact;
 }
 
+// ------------------------------------------------------------------------------------------------------------------ //
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, udpSecondaryEnabled) {
+    if (!_udpSecondaryEnabledFact) {
+        _udpSecondaryEnabledFact = _createSettingsFact(udpSecondaryEnabledName);
+        connect(_udpSecondaryEnabledFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _udpSecondaryEnabledFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, udpSecondaryUrl) {
+    if (!_udpSecondaryUrlFact) {
+        _udpSecondaryUrlFact = _createSettingsFact(udpSecondaryUrlName);
+        connect(_udpSecondaryUrlFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _udpSecondaryUrlFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, rtspSecondaryEnabled) {
+    if (!_rtspSecondaryEnabledFact) {
+        _rtspSecondaryEnabledFact = _createSettingsFact(rtspSecondaryEnabledName);
+        connect(_rtspSecondaryEnabledFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _rtspSecondaryEnabledFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, rtspSecondaryUrl) {
+    if (!_rtspSecondaryUrlFact) {
+        _rtspSecondaryUrlFact = _createSettingsFact(rtspSecondaryUrlName);
+        connect(_rtspSecondaryUrlFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _rtspSecondaryUrlFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpSecondaryEnabled) {
+    if (!_tcpSecondaryEnabledFact) {
+        _tcpSecondaryEnabledFact = _createSettingsFact(tcpSecondaryEnabledName);
+        connect(_tcpSecondaryEnabledFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _tcpSecondaryEnabledFact;
+}
+
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, tcpSecondaryUrl) {
+    if (!_tcpSecondaryUrlFact) {
+        _tcpSecondaryUrlFact = _createSettingsFact(tcpSecondaryUrlName);
+        connect(_tcpSecondaryUrlFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+    return _tcpSecondaryUrlFact;
+}
+// ------------------------------------------------------------------------------------------------------------------ //
+
 bool VideoSettings::streamConfigured(void)
 {
     //-- First, check if it's autoconfigured

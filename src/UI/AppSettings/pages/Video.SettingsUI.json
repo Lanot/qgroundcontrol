@@ -31,12 +31,36 @@
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
                 },
                 {
+                    "setting": "videoSettings.rtspSecondaryEnabled",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.rtspSecondaryUrl",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
                     "setting": "videoSettings.tcpUrl",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
+                },
+                {
+                    "setting": "videoSettings.tcpSecondaryEnabled",
+                    "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
+                },
+                {
+                    "setting": "videoSettings.tcpSecondaryUrl",
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
                 },
                 {
                     "setting": "videoSettings.udpUrl",
                     "showWhen": "videoSource === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource"
+                },
+                {
+                    "setting": "videoSettings.udpSecondaryEnabled",
+                    "showWhen": "(videoSource === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource)"
+                },
+                {
+                    "setting": "videoSettings.udpSecondaryUrl",
+                    "showWhen": "(videoSource === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource)"
                 }
             ]
         },

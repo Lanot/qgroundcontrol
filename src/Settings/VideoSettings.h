@@ -30,6 +30,15 @@ public:
     DEFINE_SETTINGFACT(lowLatencyMode)
     DEFINE_SETTINGFACT(forceVideoDecoder)
 
+    // -------------------------------------------------------------------------------------------------------------- //
+    DEFINE_SETTINGFACT(udpSecondaryEnabled)
+    DEFINE_SETTINGFACT(udpSecondaryUrl)
+    DEFINE_SETTINGFACT(rtspSecondaryEnabled)
+    DEFINE_SETTINGFACT(rtspSecondaryUrl)
+    DEFINE_SETTINGFACT(tcpSecondaryEnabled)
+    DEFINE_SETTINGFACT(tcpSecondaryUrl)
+    // -------------------------------------------------------------------------------------------------------------- //
+
     Q_PROPERTY(bool     streamConfigured        READ streamConfigured       NOTIFY streamConfiguredChanged)
     Q_PROPERTY(QString  rtspVideoSource         READ rtspVideoSource        CONSTANT)
     Q_PROPERTY(QString  udp264VideoSource       READ udp264VideoSource      CONSTANT)

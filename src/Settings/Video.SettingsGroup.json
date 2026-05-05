@@ -17,7 +17,25 @@
             "longDesc": "UDP url address and port to bind to for video stream. Example: 0.0.0.0:5600",
             "type": "string",
             "default": "0.0.0.0:5600",
-            "label": "UDP URL",
+            "label": "UDP Primary URL",
+            "keywords": "udp,mpegts,video url,stream url"
+        },
+        {
+            "name": "udpSecondaryEnabled",
+            "shortDesc": "Enable Secondary video stream",
+            "longDesc":  "Enable Secondary UDP video stream",
+            "type":      "bool",
+            "default":  false,
+            "keywords": "udp",
+            "label": "Enable Secondary UDP video stream"
+        },
+        {
+            "name": "udpSecondaryUrl",
+            "shortDesc": "Network address and port for UDP video stream (e.g. 0.0.0.0:5601).",
+            "longDesc": "UDP url address and port to bind to for video stream. Example: 0.0.0.0:5601",
+            "type": "string",
+            "default": "0.0.0.0:5601",
+            "label": "UDP Secondary URL",
             "keywords": "udp,mpegts,video url,stream url"
         },
         {
@@ -26,7 +44,25 @@
             "longDesc": "RTSP url address and port to bind to for video stream. Example: rtsp://192.168.42.1:554/live",
             "type": "string",
             "default": "",
-            "label": "RTSP URL",
+            "label": "RTSP Primary URL",
+            "keywords": "rtsp,video url,stream url"
+        },
+        {
+            "name": "rtspSecondaryEnabled",
+            "shortDesc": "Enable Secondary video stream",
+            "longDesc":  "Enable Secondary RTSP video stream",
+            "type":      "bool",
+            "default":  false,
+            "label": "Enable Secondary RTSP video stream",
+            "keywords": "rtsp"
+        },
+        {
+            "name": "rtspSecondaryUrl",
+            "shortDesc": "Network address for RTSP video stream (e.g. rtsp://192.168.42.1:554/live).",
+            "longDesc": "RTSP url address and port to bind to for video stream. Example: rtsp://192.168.42.1:554/live2",
+            "type": "string",
+            "default": "",
+            "label": "RTSP Secondary URL",
             "keywords": "rtsp,video url,stream url"
         },
         {
@@ -35,7 +71,25 @@
             "longDesc": "TCP url address and port to bind to for video stream. Example: 192.168.143.200:3001",
             "type": "string",
             "default": "",
-            "label": "TCP URL",
+            "label": "TCP Primary URL",
+            "keywords": "tcp,video url,stream url"
+        },
+        {
+            "name": "tcpSecondaryEnabled",
+            "shortDesc": "Enable Secondary video stream",
+            "longDesc":  "Enable Secondary TCP video stream",
+            "type":      "bool",
+            "default":  false,
+            "label": "Enable Secondary TCP video stream",
+            "keywords": "tcp"
+        },
+        {
+            "name": "tcpSecondaryUrl",
+            "shortDesc": "Network address and port for TCP video stream (e.g. 192.168.143.200:3002).",
+            "longDesc": "TCP url address and port to bind to for video stream. Example: 192.168.143.200:3002",
+            "type": "string",
+            "default": "",
+            "label": "TCP Secondary URL",
             "keywords": "tcp,video url,stream url"
         },
         {

@@ -314,6 +314,7 @@ void VideoManager::_createVideoReceivers()
 #endif
     static const QStringList videoStreamList = {
         "videoContent",
+        "videoSecondaryContent",
         "thermalVideo"
     };
     for (const QString &streamName : videoStreamList) {
@@ -736,6 +737,7 @@ bool VideoManager::_updateSettings(VideoReceiver *receiver)
     settingsChanged |= _updateUVC(receiver);
     settingsChanged |= _updateAutoStream(receiver);
 
+    // @todo: FIX IT
     const QString source = _videoSettings->videoSource()->rawValue().toString();
     if (source == VideoSettings::videoSourceUDPH264) {
         settingsChanged |= _updateVideoUri(receiver, QStringLiteral("udp://%1").arg(_videoSettings->udpUrl()->rawValue().toString()));
