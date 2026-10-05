@@ -293,6 +293,7 @@ Rectangle {
                         objectName:    "settingsButton_" + (model.nameKey ?? pageName)
                         text:          pageName
                         icon.source:   pageIconUrl
+                        preserveIconColors: pageIconUrl.endsWith("/custom_qgroundcontrol.png")
                         expandable:    hasMultipleSections
                         expanded:      isExpanded
                         checked:       isSelected && settingsView._selectedSectionIndex === -1

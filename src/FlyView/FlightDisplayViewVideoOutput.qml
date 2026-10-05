@@ -4,7 +4,12 @@ import QtMultimedia
 import QGroundControl
 
 VideoOutput {
+    id: videoOutput
     objectName: "videoContent"
+
+    transform: Translate {
+        y: QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1 ? -Math.max(0, videoOutput.contentRect.y) : 0
+    }
 
     // Do NOT set `orientation` here — VideoOutput composes orientation on top of the
     // QVideoFrame's own rotation()/mirrored() metadata that qgcqvideosink forwards from
@@ -19,6 +24,9 @@ VideoOutput {
     Connections {
         target: QGroundControl.videoManager
         function onImageFileChanged(filename) {
+            if (videoOutput.objectName !== "videoContent") {
+                return
+            }
             grabToImage(function(result) {
                 if (!result.saveToFile(filename)) {
                     console.error('Error capturing video frame');

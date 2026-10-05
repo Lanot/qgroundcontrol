@@ -70,12 +70,12 @@
   <simpleType name="colorType">
     <annotation>
       <documentation><![CDATA[
-        
+
         aabbggrr
-        
+
         ffffffff: opaque white
         ff000000: opaque black
-        
+
         ]]></documentation>
     </annotation>
     <restriction base="hexBinary">

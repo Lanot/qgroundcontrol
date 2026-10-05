@@ -17,6 +17,7 @@ Button {
     property bool   setupComplete:  true                                    ///< true: setup complete indicator shows as completed
     property var    imageColor:     undefined
     property string imageResource:  "/qmlimages/subMenuButtonImage.png"     ///< Button image
+    property bool   preserveIconColors: false
     property bool   largeSize:      false
     property bool   showHighlight:  control.pressed | control.checked
 
@@ -50,6 +51,7 @@ Button {
 
         QGCColoredImage {
             id:                     image
+            preserveColors:         control.preserveIconColors
             anchors.leftMargin:     ScreenTools.defaultFontPixelWidth
             anchors.left:           parent.left
             anchors.verticalCenter: parent.verticalCenter

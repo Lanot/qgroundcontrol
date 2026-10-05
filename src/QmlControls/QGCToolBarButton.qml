@@ -30,11 +30,12 @@ Button {
     contentItem: Row {
         spacing:                ScreenTools.defaultFontPixelWidth
         anchors.verticalCenter: button.verticalCenter
-        // Logo buttons render the multi-color SVG natively via VectorImage; non-logo buttons
+        // Logo buttons render in their original colors; non-logo buttons
         // tint their monochrome icon through QGCColoredImage. Plain `Row` skips visible:false items.
-        QGCVectorImage {
+        Image {
+            fillMode:               Image.PreserveAspectFit
             visible:                button.logo
-            height:                 ScreenTools.defaultFontPixelHeight * 2
+            height:                 ScreenTools.defaultFontPixelHeight * 2.5
             width:                  height
             source:                 visible ? button.icon.source : ""
             anchors.verticalCenter: parent.verticalCenter

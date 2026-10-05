@@ -2,6 +2,7 @@
 
 #include <QtCore/QScopeGuard>
 #include <QtQuick/QQuickItem>
+#include <QtQuick/QQuickWindow>
 #include <QtTest/QTest>
 
 #include <algorithm>
@@ -184,7 +185,7 @@ void TopLevelViewsTest::_testSettingsSectionVisibility()
 
     QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Settings")));
     QTRY_VERIFY(!findVisibleItem(_rootItem, QStringLiteral("settingsGroup_Settings"), 0));
-    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource"), 0));
+    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource1"), 0));
     QVERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsPage_Video")));
 }
 
@@ -217,48 +218,40 @@ void TopLevelViewsTest::_testSettingsHiddenSectionAfterPageSwitch()
     }
     QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsPage_General"), 0));
     QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Settings")));
-    QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Connection")));
+    QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Video Connection #1")));
 
     // Back to Video: panel must show the remaining content, not go blank
     if (!_clickSettingsButton(QStringLiteral("Video"))) {
         return;
     }
     QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsPage_Video"), 0));
-    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource"), 0));
+    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource1"), 0));
     QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Settings")));
 }
 
-// When a page collapses to a single visible section while one of its sections is
-// selected, the selection must normalize to the page itself so the nav still has
-// a checked item.
-void TopLevelViewsTest::_testSettingsSectionCollapseToSingle()
+// Hiding a selected section must normalize selection to the page while camera controls remain available.
+void TopLevelViewsTest::_testSettingsSelectedSectionHidden()
 {
     startUI();
     if (QTest::currentTestFailed())
         return;
 
     const auto restoreVideoSource = setVideoSourceWithRestore(VideoSettings::videoSourceRTSP);
-
     QVERIFY(clickToolSelectDropdownButton(QStringLiteral("toolbar_viewSettings")));
-
     QQuickItem* const videoButton = _clickSettingsButton(QStringLiteral("Video"));
     if (!videoButton) {
         return;
     }
-    QVERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsPage_Video")));
-
-    // Select the always-visible "Video Source" section
-    QQuickItem* sourceSection = nullptr;
-    QTRY_VERIFY((sourceSection = findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Video Source"))));
-    QVERIFY(_clickItemAt(sourceSection, 0.5, 0.5, QStringLiteral("section Video Source")));
+    QQuickItem* settingsSection = nullptr;
+    QTRY_VERIFY((settingsSection = findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Settings"))));
+    QVERIFY(_clickItemAt(settingsSection, 0.5, 0.5, QStringLiteral("section Settings")));
     QTRY_VERIFY(!videoButton->property("checked").toBool());
 
-    // Disabling the source hides all other sections, leaving only "Video Source"
     setVideoSource(VideoSettings::videoDisabled);
-
-    QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Video Source")));
+    QTRY_VERIFY(!findVisibleSectionButton(videoButton->parentItem(), QStringLiteral("Settings")));
     QTRY_VERIFY(videoButton->property("checked").toBool());
-    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource"), 0));
+    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource1"), 0));
+    QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSettings"), 0));
 }
 
 // When the selected page becomes entirely unavailable the view must fall back to
@@ -407,10 +400,10 @@ void TopLevelViewsTest::_testDiscoveredCameraReceiverSettingsVisible()
     // page binding to isolate these UI visibility rules from camera transport.
     QVERIFY(videoPage->setProperty("autoStreamConfig", true));
 
-    QQuickItem* const sourceGroup = findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource"));
+    QQuickItem* const sourceGroup = findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoSource1"));
     QVERIFY(sourceGroup);
     QTRY_VERIFY(!sourceGroup->isEnabled());
-    QTRY_VERIFY(!findVisibleItem(_rootItem, QStringLiteral("settingsGroup_Connection"), 0));
+    QTRY_VERIFY(!findVisibleItem(_rootItem, QStringLiteral("settingsGroup_VideoConnection1"), 0));
     QTRY_VERIFY(!findVisibleItem(_rootItem, QStringLiteral("settingsTextField_aspectRatio"), 0));
 
     QTRY_VERIFY(findVisibleItem(_rootItem, QStringLiteral("settingsCheckBox_disableWhenDisarmed"), 0));
@@ -420,4 +413,116 @@ void TopLevelViewsTest::_testDiscoveredCameraReceiverSettingsVisible()
 
     stopUI();
 #endif
+}
+
+void TopLevelViewsTest::_testCameraVideoOutputsDiscoverable()
+{
+    VideoSettings* const settings = SettingsManager::instance()->videoSettings();
+    Fact* const count = settings->numberOfCameras();
+    const QVariant savedCount = count->rawValue();
+    const auto restoreCount = qScopeGuard([count, savedCount] { count->setRawValue(savedCount); });
+    const auto restoreSource = setVideoSourceWithRestore(VideoSettings::videoSourceRTSP);
+    count->setRawValue(4);
+    startUI();
+    if (QTest::currentTestFailed()) {
+        return;
+    }
+    QVERIFY(_window);
+    QVERIFY(_window->findChild<QQuickItem*>(QStringLiteral("videoContent")));
+    for (int camera = 2; camera <= 4; ++camera) {
+        const QString outputName = QStringLiteral("cameraVideo%1").arg(camera);
+        QVERIFY2(_window->findChild<QQuickItem*>(outputName), qPrintable(outputName));
+    }
+}
+
+void TopLevelViewsTest::_testCameraLayoutAndWindows()
+{
+    VideoSettings* const settings = SettingsManager::instance()->videoSettings();
+    const QVariant savedCount = settings->numberOfCameras()->rawValue();
+    const QVariant savedMode = settings->cameraDisplayMode()->rawValue();
+    const QVariant savedUrl = settings->rtspUrl()->rawValue();
+    const auto restoreSettings = qScopeGuard([=] {
+        settings->numberOfCameras()->setRawValue(savedCount);
+        settings->cameraDisplayMode()->setRawValue(savedMode);
+        settings->rtspUrl()->setRawValue(savedUrl);
+    });
+    const auto restoreSource = setVideoSourceWithRestore(VideoSettings::videoSourceRTSP);
+    settings->numberOfCameras()->setRawValue(4);
+    settings->cameraDisplayMode()->setRawValue(0);
+    settings->rtspUrl()->setRawValue(QStringLiteral("rtsp://192.0.2.1/live"));
+    startUI();
+    if (QTest::currentTestFailed()) {
+        return;
+    }
+    auto* view = _window->findChild<QQuickItem*>(QStringLiteral("cameraVideoView"));
+    QVERIFY(view);
+    QTRY_VERIFY(view->width() > 0);
+    auto* primary = _window->findChild<QQuickItem*>(QStringLiteral("cameraTile1"));
+    QVERIFY(primary);
+    QTRY_COMPARE(primary->width(), view->width() / 2);
+    QTRY_COMPARE(primary->height(), view->height() / 2);
+
+    auto* primaryContent = _window->findChild<QQuickItem*>(QStringLiteral("primaryVideoContentArea"));
+    QVERIFY(primaryContent);
+    QTRY_COMPARE(primaryContent->width(), primary->width());
+    QTRY_COMPARE(primaryContent->height(), primary->height());
+
+    settings->cameraDisplayMode()->setRawValue(1);
+    QTRY_COMPARE(primaryContent->width(), primary->width());
+    QTRY_COMPARE(primaryContent->height(), primary->height());
+    for (int camera = 1; camera <= 4; ++camera) {
+        auto* tile = _window->findChild<QQuickItem*>(QStringLiteral("cameraTile%1").arg(camera));
+        QVERIFY(tile);
+        QTRY_COMPARE(tile->width(), view->width() / 4);
+        QTRY_COMPARE(tile->height(), view->height());
+        QTRY_COMPARE(tile->x(), (camera - 1) * tile->width());
+        QTRY_COMPARE(tile->y(), 0.0);
+    }
+
+    auto* panel = _window->findChild<QQuickItem*>(QStringLiteral("flyVideoPipView"));
+    QVERIFY(panel);
+    if (panel->property("freeResize").toBool()) {
+        const qreal savedWidth = panel->width();
+        const qreal savedHeight = panel->height();
+        QVERIFY(panel->setProperty("_pipHeight", savedHeight));
+        QVERIFY(panel->setProperty("_pipSize", savedWidth + 40));
+        QTRY_COMPARE(panel->width(), savedWidth + 40);
+        QTRY_COMPARE(panel->height(), savedHeight);
+        QVERIFY(panel->setProperty("_pipHeight", savedHeight + 30));
+        QTRY_COMPARE(panel->height(), savedHeight + 30);
+        QTRY_COMPARE(panel->width(), savedWidth + 40);
+        QVERIFY(panel->setProperty("_pipSize", savedWidth));
+        QVERIFY(panel->setProperty("_pipHeight", savedHeight));
+    }
+
+    QList<QQuickWindow*> cameraWindows;
+    QList<QQuickItem*> outputs;
+    for (int camera = 1; camera <= 4; ++camera) {
+        auto* window = _window->findChild<QQuickWindow*>(QStringLiteral("cameraWindow%1").arg(camera));
+        auto* tile = _window->findChild<QQuickItem*>(QStringLiteral("cameraTile%1").arg(camera));
+        const QString outputName = camera == 1 ? QStringLiteral("videoContent")
+                                               : QStringLiteral("cameraVideo%1").arg(camera);
+        auto* output = _window->findChild<QQuickItem*>(outputName);
+        QVERIFY(window);
+        QVERIFY(tile);
+        QVERIFY(output);
+        QVERIFY(QMetaObject::invokeMethod(window, "popOut"));
+        QTRY_VERIFY(window->isVisible());
+        QTRY_COMPARE(tile->window(), window);
+        QTRY_COMPARE(output->window(), window);
+        window->setWidth(window->width() + 100);
+        QTRY_COMPARE(tile->width(), static_cast<qreal>(window->width()));
+        cameraWindows.append(window);
+        outputs.append(output);
+    }
+    // Reducing the count returns a detached camera before hiding its tile.
+    settings->numberOfCameras()->setRawValue(3);
+    QTRY_VERIFY(!cameraWindows.last()->isVisible());
+    QTRY_VERIFY(!cameraWindows.last()->property("detached").toBool());
+    settings->numberOfCameras()->setRawValue(4);
+    for (int index = 0; index < cameraWindows.size(); ++index) {
+        cameraWindows[index]->close();
+        QTRY_VERIFY(!cameraWindows[index]->property("detached").toBool());
+        QTRY_COMPARE(outputs[index]->window(), _window);
+    }
 }

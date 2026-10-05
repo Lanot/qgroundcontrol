@@ -91,9 +91,11 @@ Item {
 
         PipView {
             id:                     _pipView
+            objectName:             "flyVideoPipView"
             anchors.left:           parent.left
             anchors.bottom:         parent.bottom
             anchors.margins:        _toolsMargin
+            freeResize:             _pipOrWindowItem === videoControl
             item1IsFullSettingsKey: "MainFlyWindowIsMap"
             item1:                  mapControl
             item2:                  QGroundControl.videoManager.hasVideo ? videoControl : null

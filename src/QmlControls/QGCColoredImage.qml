@@ -8,6 +8,7 @@ Item {
     id: root
 
     property color  color:  "white"
+    property bool   preserveColors: false
     property url    source
 
     property alias asynchronous:        image.asynchronous
@@ -46,7 +47,7 @@ Item {
         fillMode:           Image.PreserveAspectFit
         anchors.fill:       parent
         sourceSize.height:  height
-        source:             root._path.length > 0
+        source:             root.preserveColors ? root.source : root._path.length > 0
                             ? "image://coloredsvg" + root._path + "?color=" + root._hex
                             : ""
     }

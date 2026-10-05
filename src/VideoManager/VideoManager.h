@@ -8,6 +8,7 @@
 #include <QtCore/QPromise>
 #include <QtCore/QObject>
 #include <QtCore/QSize>
+#include <QtCore/QSet>
 #include <QtQmlIntegration/QtQmlIntegration>
 
 #ifdef QGC_UNITTEST_BUILD
@@ -57,6 +58,8 @@ public:
     Q_INVOKABLE void startVideo();
     Q_INVOKABLE void stopRecording();
     Q_INVOKABLE void stopVideo();
+    Q_INVOKABLE void pauseCameraVideo(int camera);
+    Q_INVOKABLE void resumeCameraVideo(int camera);
 
     void init(QQuickWindow *mainWindow);
     void startVideoBackendInit();
@@ -125,6 +128,9 @@ private:
     void _stopReceiver(VideoReceiver *receiver);
     static void _cleanupOldVideos();
 
+    QSet<VideoReceiver*> _windowChangingReceivers;
+    QSet<VideoReceiver*> _streamingReceivers;
+    QSet<VideoReceiver*> _recordingReceivers;
     QList<VideoReceiver*> _videoReceivers;
     SubtitleWriter *_subtitleWriter = nullptr;
     VideoSettings *_videoSettings = nullptr;

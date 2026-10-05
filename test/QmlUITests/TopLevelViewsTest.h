@@ -16,9 +16,11 @@ public:
 
 private slots:
     void _testNavigateViews();
+    void _testCameraVideoOutputsDiscoverable();
+    void _testCameraLayoutAndWindows();
     void _testSettingsSectionVisibility();
     void _testSettingsHiddenSectionAfterPageSwitch();
-    void _testSettingsSectionCollapseToSingle();
+    void _testSettingsSelectedSectionHidden();
     void _testSettingsPageUnavailableFallback();
     void _testSettingsSearchExcludesHiddenSections();
     void _testSettingsDividerVisibility();

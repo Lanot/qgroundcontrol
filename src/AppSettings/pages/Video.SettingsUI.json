@@ -6,12 +6,37 @@
         "autoStreamConfig": "QGroundControl.videoManager.autoStreamConfigured",
         "sourceDisabled": "videoSource === QGroundControl.settingsManager.videoSettings.disabledVideoSource",
         "isStreamSource": "QGroundControl.videoManager.isStreamSource",
-        "rtpLatencyVisible": "!QGroundControl.settingsManager.videoSettings.lowLatencyMode.rawValue"
+        "rtpLatencyVisible": "!QGroundControl.settingsManager.videoSettings.lowLatencyMode.rawValue",
+        "videoSource2": "QGroundControl.settingsManager.videoSettings.videoSource2.rawValue",
+        "videoSource3": "QGroundControl.settingsManager.videoSettings.videoSource3.rawValue",
+        "videoSource4": "QGroundControl.settingsManager.videoSettings.videoSource4.rawValue",
+        "anySourceEnabled": "!sourceDisabled || (QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 2 && videoSource2 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource) || (QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 3 && videoSource3 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource) || (QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 4 && videoSource4 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource)",
+        "streamSettingsVisible": "isStreamSource || QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1"
     },
     "groups": [
         {
-            "heading": "Video Source",
-            "keywords": ["video source", "camera", "stream"],
+            "heading": "Video Settings",
+            "controls": [
+                {
+                    "setting": "videoSettings.numberOfCameras"
+                },
+                {
+                    "setting": "videoSettings.cameraDisplayMode",
+                    "control": "combobox"
+                },
+                {
+                    "setting": "videoSettings.transparentVideoBackground",
+                    "control": "checkbox"
+                }
+            ]
+        },
+        {
+            "heading": "Video Source #1",
+            "keywords": [
+                "video source",
+                "camera",
+                "stream"
+            ],
             "enableWhen": "!autoStreamConfig",
             "headingDescription": "autoStreamConfig ? qsTr(\"Mavlink camera stream is automatically configured\") : \"\"",
             "controls": [
@@ -22,8 +47,15 @@
             ]
         },
         {
-            "heading": "Connection",
-            "keywords": ["rtsp", "tcp", "udp", "mpegts", "video url", "stream url"],
+            "heading": "Video Connection #1",
+            "keywords": [
+                "rtsp",
+                "tcp",
+                "udp",
+                "mpegts",
+                "video url",
+                "stream url"
+            ],
             "showWhen": "!sourceDisabled && !autoStreamConfig",
             "controls": [
                 {
@@ -41,29 +73,145 @@
             ]
         },
         {
+            "heading": "Video Source #2",
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 2",
+            "controls": [
+                {
+                    "setting": "videoSettings.videoSource2",
+                    "control": "combobox"
+                }
+            ]
+        },
+        {
+            "heading": "Video Connection #2",
+            "keywords": [
+                "rtsp",
+                "tcp",
+                "udp",
+                "mpegts",
+                "video url",
+                "stream url"
+            ],
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 2 && videoSource2 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource",
+            "controls": [
+                {
+                    "setting": "videoSettings.rtspUrl2",
+                    "showWhen": "videoSource2 === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.tcpUrl2",
+                    "showWhen": "videoSource2 === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
+                },
+                {
+                    "setting": "videoSettings.udpUrl2",
+                    "showWhen": "videoSource2 === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource2 === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource2 === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource"
+                }
+            ]
+        },
+        {
+            "heading": "Video Source #3",
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 3",
+            "controls": [
+                {
+                    "setting": "videoSettings.videoSource3",
+                    "control": "combobox"
+                }
+            ]
+        },
+        {
+            "heading": "Video Connection #3",
+            "keywords": [
+                "rtsp",
+                "tcp",
+                "udp",
+                "mpegts",
+                "video url",
+                "stream url"
+            ],
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 3 && videoSource3 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource",
+            "controls": [
+                {
+                    "setting": "videoSettings.rtspUrl3",
+                    "showWhen": "videoSource3 === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.tcpUrl3",
+                    "showWhen": "videoSource3 === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
+                },
+                {
+                    "setting": "videoSettings.udpUrl3",
+                    "showWhen": "videoSource3 === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource3 === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource3 === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource"
+                }
+            ]
+        },
+        {
+            "heading": "Video Source #4",
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 4",
+            "controls": [
+                {
+                    "setting": "videoSettings.videoSource4",
+                    "control": "combobox"
+                }
+            ]
+        },
+        {
+            "heading": "Video Connection #4",
+            "keywords": [
+                "rtsp",
+                "tcp",
+                "udp",
+                "mpegts",
+                "video url",
+                "stream url"
+            ],
+            "showWhen": "QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue >= 4 && videoSource4 !== QGroundControl.settingsManager.videoSettings.disabledVideoSource",
+            "controls": [
+                {
+                    "setting": "videoSettings.rtspUrl4",
+                    "showWhen": "videoSource4 === QGroundControl.settingsManager.videoSettings.rtspVideoSource"
+                },
+                {
+                    "setting": "videoSettings.tcpUrl4",
+                    "showWhen": "videoSource4 === QGroundControl.settingsManager.videoSettings.tcpVideoSource"
+                },
+                {
+                    "setting": "videoSettings.udpUrl4",
+                    "showWhen": "videoSource4 === QGroundControl.settingsManager.videoSettings.udp264VideoSource || videoSource4 === QGroundControl.settingsManager.videoSettings.udp265VideoSource || videoSource4 === QGroundControl.settingsManager.videoSettings.mpegtsVideoSource"
+                }
+            ]
+        },
+        {
             "heading": "Settings",
-            "keywords": ["aspect ratio", "low latency", "decoder", "hardware decode", "disable when disarmed", "gpu", "zero-copy"],
-            "showWhen": "!sourceDisabled",
+            "keywords": [
+                "aspect ratio",
+                "low latency",
+                "decoder",
+                "hardware decode",
+                "disable when disarmed",
+                "gpu",
+                "zero-copy"
+            ],
+            "showWhen": "anySourceEnabled",
             "controls": [
                 {
                     "setting": "videoSettings.aspectRatio",
-                    "showWhen": "!autoStreamConfig && isStreamSource"
+                    "showWhen": "!autoStreamConfig && streamSettingsVisible"
                 },
                 {
                     "setting": "videoSettings.disableWhenDisarmed",
-                    "showWhen": "isStreamSource"
+                    "showWhen": "streamSettingsVisible"
                 },
                 {
                     "setting": "videoSettings.lowLatencyMode",
-                    "showWhen": "isStreamSource"
+                    "showWhen": "streamSettingsVisible"
                 },
                 {
                     "setting": "videoSettings.rtpJitterLatencyMs",
-                    "showWhen": "isStreamSource && rtpLatencyVisible"
+                    "showWhen": "streamSettingsVisible && rtpLatencyVisible"
                 },
                 {
                     "setting": "videoSettings.rtspAutoReconnect",
-                    "showWhen": "isStreamSource"
+                    "showWhen": "streamSettingsVisible"
                 },
                 {
                     "setting": "videoSettings.forceCpuVideoPath"
@@ -75,8 +223,15 @@
         },
         {
             "heading": "Local Video Storage",
-            "keywords": ["record", "recording format", "mp4", "mkv", "storage limit", "video file"],
-            "showWhen": "!sourceDisabled",
+            "keywords": [
+                "record",
+                "recording format",
+                "mp4",
+                "mkv",
+                "storage limit",
+                "video file"
+            ],
+            "showWhen": "anySourceEnabled",
             "controls": [
                 {
                     "setting": "videoSettings.recordingFormat"

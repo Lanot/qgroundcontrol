@@ -8,8 +8,8 @@ Rectangle {
     width:              parent.width
     height:             parent.height
     implicitWidth:      videoOutput.implicitWidth
-    implicitHeight:     videoOutput.implicitHeight   
-    color:              Qt.rgba(0,0,0,0.75)
+    implicitHeight:     videoOutput.implicitHeight
+    color:              QGroundControl.settingsManager.videoSettings.transparentVideoBackground.rawValue ? "transparent" : Qt.rgba(0,0,0,0.75)
     clip:               true
     anchors.centerIn:   parent
     visible:            _videoManager.isUvc
@@ -17,6 +17,10 @@ Rectangle {
     property var _videoManager: QGroundControl.videoManager
 
     function adjustAspectRatio() {
+        if (QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1) {
+            _root.height = Qt.binding(function() { return parent.height })
+            return
+        }
         //-- Set aspect ratio
         var resolution = camera.cameraFormat.resolution
         if (resolution.height > 0 && resolution.width > 0) {
@@ -62,6 +66,9 @@ Rectangle {
 
     VideoOutput {
         id:             videoOutput
+        transform: Translate {
+            y: QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1 ? -Math.max(0, videoOutput.contentRect.y) : 0
+        }
         anchors.fill:   parent
         fillMode:       VideoOutput.PreserveAspectCrop
     }

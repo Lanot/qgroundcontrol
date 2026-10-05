@@ -7,12 +7,14 @@ import QGroundControl.Controls
 Item {
     id:         _root
     width:      _pipSize
-    height:     _pipSize * (9/16)
+    height:     freeResize ? _pipHeight : _pipSize * (9/16)
     visible:    item2 && item2.pipState !== item2.pipState.window && show
 
     property var    item1:                  null    // Required
     property var    item2:                  null    // Optional, may come and go
     property string item1IsFullSettingsKey          // Settings key to save whether item1 was saved in full mode
+    property bool   freeResize: false
+    property real   _pipHeight: parent.width * 0.2 * (9/16)
     property bool   show:                   true
 
     readonly property string _pipExpandedSettingsKey: "IsPIPVisible"
@@ -111,16 +113,18 @@ Item {
         id:                 pipResize
         anchors.fill:       pipResizeIcon
         preventStealing:    true
-        cursorShape:        Qt.PointingHandCursor
+        cursorShape:        Qt.SizeBDiagCursor
 
         property real initialX:     0
         property real initialWidth: 0
+        property real initialHeight: 0
 
         onPressed: (mouse) => {
             // Remove the anchor so the our mouse coordinates stay in the same original place for drag tracking
             pipResize.anchors.fill = undefined
             pipResize.initialX = mouse.x
             pipResize.initialWidth = _root.width
+            pipResize.initialHeight = _root.height
         }
 
         onReleased: pipResize.anchors.fill = pipResizeIcon
@@ -130,11 +134,55 @@ Item {
             if (pipResize.pressed) {
                 var parentWidth = _root.parent.width
                 var newWidth = pipResize.initialWidth + mouse.x - pipResize.initialX
-                if (newWidth < parentWidth * _maxSize && newWidth > parentWidth * _minSize) {
+                if (newWidth <= (_root.freeResize ? parentWidth - 2 * _root.anchors.margins : parentWidth * _maxSize) && newWidth > parentWidth * _minSize) {
+                    if (_root.freeResize) {
+                        _pipHeight = Math.min(_root.parent.height - 2 * _root.anchors.margins, newWidth * pipResize.initialHeight / pipResize.initialWidth)
+                    }
                     _pipSize = newWidth
                 }
             }
         }
+    }
+
+    component EdgeResize: MouseArea {
+        required property bool horizontalResize
+        enabled: _root.freeResize && _root._isExpanded
+        preventStealing: true
+        cursorShape: horizontalResize ? Qt.SizeHorCursor : Qt.SizeVerCursor
+        property real startPosition
+        property real startSize
+        onPressed: (mouse) => {
+            var point = mapToItem(_root.parent, mouse.x, mouse.y)
+            startPosition = horizontalResize ? point.x : point.y
+            startSize = horizontalResize ? _root.width : _root.height
+            // Break the initial proportional-height binding for independent resizing.
+            _root._pipHeight = _root.height
+        }
+        onPositionChanged: (mouse) => {
+            if (!pressed) return
+            var point = mapToItem(_root.parent, mouse.x, mouse.y)
+            if (horizontalResize) {
+                _root._pipSize = Math.max(_root.parent.width * _root._minSize,
+                    Math.min(_root.parent.width - 2 * _root.anchors.margins, startSize + point.x - startPosition))
+            } else {
+                _root._pipHeight = Math.max(ScreenTools.defaultFontPixelHeight * 4,
+                    Math.min(_root.parent.height - 2 * _root.anchors.margins, startSize - point.y + startPosition))
+            }
+        }
+    }
+    EdgeResize {
+        horizontalResize: true
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: ScreenTools.defaultFontPixelWidth
+        height: Math.max(0, parent.height - ScreenTools.defaultFontPixelHeight * 5)
+    }
+    EdgeResize {
+        horizontalResize: false
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.max(0, parent.width - ScreenTools.defaultFontPixelHeight * 5)
+        height: ScreenTools.defaultFontPixelWidth
     }
 
     // Resize icon
@@ -161,8 +209,9 @@ Item {
                 return
             }
             var parentWidth = _root.parent.width
-            if (_root.width > parentWidth * _maxSize) {
-                _pipSize = parentWidth * _maxSize
+            var maximumWidth = _root.freeResize ? parentWidth - 2 * _root.anchors.margins : parentWidth * _maxSize
+            if (_root.width > maximumWidth) {
+                _pipSize = maximumWidth
             } else if (_root.width < parentWidth * _minSize) {
                 _pipSize = parentWidth * _minSize
             }

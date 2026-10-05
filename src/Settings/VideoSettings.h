@@ -13,6 +13,21 @@ public:
     VideoSettings(QObject* parent = nullptr);
     DEFINE_SETTING_NAME_GROUP()
 
+    DEFINE_SETTINGFACT(numberOfCameras)
+    DEFINE_SETTINGFACT(cameraDisplayMode)
+    DEFINE_SETTINGFACT(transparentVideoBackground)
+    DEFINE_SETTINGFACT(videoSource2)
+    DEFINE_SETTINGFACT(udpUrl2)
+    DEFINE_SETTINGFACT(tcpUrl2)
+    DEFINE_SETTINGFACT(rtspUrl2)
+    DEFINE_SETTINGFACT(videoSource3)
+    DEFINE_SETTINGFACT(udpUrl3)
+    DEFINE_SETTINGFACT(tcpUrl3)
+    DEFINE_SETTINGFACT(rtspUrl3)
+    DEFINE_SETTINGFACT(videoSource4)
+    DEFINE_SETTINGFACT(udpUrl4)
+    DEFINE_SETTINGFACT(tcpUrl4)
+    DEFINE_SETTINGFACT(rtspUrl4)
     DEFINE_SETTINGFACT(videoSource)
     DEFINE_SETTINGFACT(udpUrl)
     DEFINE_SETTINGFACT(tcpUrl)
@@ -42,6 +57,8 @@ public:
     Q_PROPERTY(QString  tcpVideoSource          READ tcpVideoSource         CONSTANT)
     Q_PROPERTY(QString  mpegtsVideoSource       READ mpegtsVideoSource      CONSTANT)
     Q_PROPERTY(QString  disabledVideoSource     READ disabledVideoSource    CONSTANT)
+
+    Q_INVOKABLE Fact* cameraFact(const QString& factName, int camera);
 
     bool     streamConfigured       ();
     QString  rtspVideoSource        () { return videoSourceRTSP; }

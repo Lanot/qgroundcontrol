@@ -53,6 +53,12 @@ DECLARE_SETTINGGROUP(Video, "Video")
 
     _nameToMetaDataMap[videoSourceName]->setEnumInfo(videoSourceCookedList, videoSourceList);
 
+    for (int camera = 2; camera <= 4; ++camera) {
+        auto* metadata = _nameToMetaDataMap[QStringLiteral("videoSource%1").arg(camera)];
+        metadata->setEnumInfo(videoSourceCookedList, videoSourceList);
+        metadata->setRawDefaultValue(videoDisabled);
+    }
+
     _setForceVideoDecodeList();
 
     // Migrate legacy gpuZeroCopyEnabled (pre-rename) into the new force-CPU semantics.
@@ -354,4 +360,76 @@ void VideoSettings::pruneUnavailableDecoders()
         fact->setRawValue(GStreamer::VideoDecoderOptions::ForceVideoDecoderDefault);
     }
 #endif
+}
+
+DECLARE_SETTINGSFACT(VideoSettings, numberOfCameras)
+DECLARE_SETTINGSFACT(VideoSettings, cameraDisplayMode)
+DECLARE_SETTINGSFACT(VideoSettings, transparentVideoBackground)
+DECLARE_SETTINGSFACT(VideoSettings, videoSource2)
+DECLARE_SETTINGSFACT(VideoSettings, udpUrl2)
+DECLARE_SETTINGSFACT(VideoSettings, tcpUrl2)
+DECLARE_SETTINGSFACT(VideoSettings, rtspUrl2)
+DECLARE_SETTINGSFACT(VideoSettings, videoSource3)
+DECLARE_SETTINGSFACT(VideoSettings, udpUrl3)
+DECLARE_SETTINGSFACT(VideoSettings, tcpUrl3)
+DECLARE_SETTINGSFACT(VideoSettings, rtspUrl3)
+DECLARE_SETTINGSFACT(VideoSettings, videoSource4)
+DECLARE_SETTINGSFACT(VideoSettings, udpUrl4)
+DECLARE_SETTINGSFACT(VideoSettings, tcpUrl4)
+DECLARE_SETTINGSFACT(VideoSettings, rtspUrl4)
+
+Fact* VideoSettings::cameraFact(const QString& factName, int camera)
+{
+    if (camera < 1 || camera > 4) {
+        return nullptr;
+    }
+    if (factName == QStringLiteral("videoSource")) {
+        switch (camera) {
+            case 1:
+                return videoSource();
+            case 2:
+                return videoSource2();
+            case 3:
+                return videoSource3();
+            case 4:
+                return videoSource4();
+        }
+    }
+    if (factName == QStringLiteral("udpUrl")) {
+        switch (camera) {
+            case 1:
+                return udpUrl();
+            case 2:
+                return udpUrl2();
+            case 3:
+                return udpUrl3();
+            case 4:
+                return udpUrl4();
+        }
+    }
+    if (factName == QStringLiteral("tcpUrl")) {
+        switch (camera) {
+            case 1:
+                return tcpUrl();
+            case 2:
+                return tcpUrl2();
+            case 3:
+                return tcpUrl3();
+            case 4:
+                return tcpUrl4();
+        }
+    }
+    if (factName == QStringLiteral("rtspUrl")) {
+        switch (camera) {
+            case 1:
+                return rtspUrl();
+            case 2:
+                return rtspUrl2();
+            case 3:
+                return rtspUrl3();
+            case 4:
+                return rtspUrl4();
+        }
+    }
+    return nullptr;
 }

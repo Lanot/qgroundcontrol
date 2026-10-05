@@ -5,6 +5,8 @@
 
 target_sources(${CMAKE_PROJECT_NAME}
     PRIVATE
+        VideoSettingsTest.cc
+        VideoSettingsTest.h
         AppSettingsTest.cc
         AppSettingsTest.h
         AutoConnectSettingsTest.cc
@@ -18,3 +20,5 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 add_qgc_test(AppSettingsTest LABELS Unit)
 add_qgc_test(AutoConnectSettingsTest LABELS Unit)
 add_qgc_test(RemoteIDSettingsTest LABELS Unit)
+
+add_qgc_test(VideoSettingsTest LABELS Unit)

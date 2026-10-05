@@ -6,6 +6,10 @@ import QGroundControl.Controls
 Item {
     id: _root
 
+    readonly property int _cameraCount: QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue
+    readonly property real _primaryVideoWidth: videoStreaming.primaryVideoItem.width
+    readonly property real _primaryVideoHeight: videoStreaming.primaryVideoItem.height
+
     property Item pipView
     property Item pipState: videoPipState
 
@@ -44,7 +48,7 @@ Item {
         id:             videoStreaming
         anchors.fill:   parent
         useSmallFont:   _root.pipState.state !== _root.pipState.fullState
-        visible:        QGroundControl.videoManager.isStreamSource || QGroundControl.videoManager.isUvc
+        visible:        QGroundControl.videoManager.hasVideo
     }
 
     QGCLabel {
@@ -70,13 +74,17 @@ Item {
 
     OnScreenGimbalController {
         id:                      onScreenGimbalController
-        anchors.fill:            parent
+        parent: videoStreaming.primaryVideoItem
+        width: _root._primaryVideoWidth
+        height: _root._primaryVideoHeight
         cameraTrackingEnabled:   !!(videoStreaming._camera && videoStreaming._camera.trackingEnabled)
     }
 
     OnScreenCameraTrackingController {
         id:                      cameraTrackingController
-        anchors.fill:            parent
+        parent: videoStreaming.primaryVideoItem
+        width: _root._primaryVideoWidth
+        height: _root._primaryVideoHeight
         camera:                  videoStreaming._camera
         videoWidth:              videoStreaming.getWidth()
         videoHeight:             videoStreaming.getHeight()
@@ -84,7 +92,9 @@ Item {
 
     MouseArea {
         id:                         flyViewVideoMouseArea
-        anchors.fill:               parent
+        parent: videoStreaming.primaryVideoItem
+        width: _root._primaryVideoWidth
+        height: _root._primaryVideoHeight
         enabled:                    pipState.state === pipState.fullState
 
         property real _pressX:      0
@@ -93,7 +103,7 @@ Item {
         property bool _doubleClicked: false
         readonly property real _dragThreshold: 10
 
-        // Defer single-click handling so a double-click (fullscreen toggle) doesn't also
+        // Defer single-click handling so a double-click (open separate window) doesn't also
         // fire an unintended gimbal click-to-point/tracking command on its first click.
         Timer {
             id:         singleClickTimer
@@ -114,7 +124,7 @@ Item {
             // onReleased, so flag it to prevent re-arming the single-click timer.
             _doubleClicked = true
             singleClickTimer.stop()
-            QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+            videoStreaming.popOutPrimaryVideo()
         }
 
         onPressed: (mouse) => {
@@ -155,12 +165,15 @@ Item {
     }
 
     ProximityRadarVideoView{
-        anchors.fill:   parent
+        parent: videoStreaming.primaryVideoItem
+        width: _root._primaryVideoWidth
+        height: _root._primaryVideoHeight
         vehicle:        QGroundControl.multiVehicleManager.activeVehicle
     }
 
     ObstacleDistanceOverlayVideo {
         id: obstacleDistance
+        parent: videoStreaming.primaryVideoItem
         showText: pipState.state === pipState.fullState
     }
 }

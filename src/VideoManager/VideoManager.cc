@@ -174,10 +174,27 @@ void VideoManager::init(QQuickWindow *mainWindow)
 
     VideoBackend::onMainWindowReady(mainWindow);
 
+    (void) connect(_videoSettings->numberOfCameras(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
+    for (int camera = 2; camera <= 4; ++camera) {
+        for (const QString& name : {QStringLiteral("videoSource"), QStringLiteral("udpUrl"), QStringLiteral("tcpUrl"),
+                                    QStringLiteral("rtspUrl")}) {
+            (void) connect(_videoSettings->cameraFact(name, camera), &Fact::rawValueChanged, this,
+                           &VideoManager::_videoSourceChanged);
+        }
+    }
     (void) connect(_videoSettings->videoSource(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->udpUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->rtspUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
     (void) connect(_videoSettings->tcpUrl(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
+    (void) connect(_videoSettings->streamEnabled(), &Fact::rawValueChanged, this, [this]() {
+        emit hasVideoChanged();
+        emit isUvcChanged();
+        if (hasVideo()) {
+            startVideo();
+        } else {
+            stopVideo();
+        }
+    });
     (void) connect(_videoSettings->aspectRatio(), &Fact::rawValueChanged, this, &VideoManager::aspectRatioChanged);
     (void) connect(_videoSettings->lowLatencyMode(), &Fact::rawValueChanged, this, [this](const QVariant &value) { Q_UNUSED(value); _restartAllVideos(); });
     // rtpJitterLatencyMs needs a pipeline restart; route through _videoSourceChanged so _updateSettings
@@ -278,10 +295,8 @@ void VideoManager::_createVideoReceivers()
         return;
     }
 #endif
-    static const QStringList videoStreamList = {
-        "videoContent",
-        "thermalVideo"
-    };
+    static const QStringList videoStreamList = {"videoContent", "thermalVideo", "cameraVideo2", "cameraVideo3",
+                                                "cameraVideo4"};
 
     QStringList existing;
     existing.reserve(_videoReceivers.size());
@@ -400,7 +415,9 @@ void VideoManager::grabImage(const QString &imageFile)
     emit imageFileChanged(_imageFile);
 
     for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
-        receiver->takeScreenshot(_imageFile);
+        if (receiver->name() == QStringLiteral("videoContent")) {
+            receiver->takeScreenshot(_imageFile);
+        }
         // QSharedPointer<QQuickItemGrabResult> result = receiver->widget()->grabToImage(const QSize &targetSize = QSize())
     }
 }
@@ -472,7 +489,16 @@ bool VideoManager::hasThermal() const
 
 bool VideoManager::hasVideo() const
 {
-    return (_videoSettings->streamEnabled()->rawValue().toBool() && _videoSettings->streamConfigured());
+    if (!_videoSettings->streamEnabled()->rawValue().toBool()) {
+        return false;
+    }
+    for (int camera = 2; camera <= _videoSettings->numberOfCameras()->rawValue().toInt(); ++camera) {
+        const QString source = _videoSettings->cameraFact(QStringLiteral("videoSource"), camera)->rawValue().toString();
+        if (source != VideoSettings::videoDisabled && source != VideoSettings::videoSourceNoVideo) {
+            return true;
+        }
+    }
+    return _videoSettings->streamConfigured();
 }
 
 bool VideoManager::isUvc() const
@@ -514,7 +540,7 @@ bool VideoManager::isStreamSource() const
 
 void VideoManager::_videoSourceChanged()
 {
-    bool changed = false;
+    QList<VideoReceiver*> changedReceivers;
     if (_activeVehicle) {
         QGCCameraManager* camMgr = _activeVehicle->cameraManager();
         for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
@@ -524,23 +550,29 @@ void VideoManager::_videoSourceChanged()
             } else {
                 info = camMgr ? camMgr->currentStreamInstance() : nullptr;
             }
-            receiver->setVideoStreamInfo(info);
-            changed |= _updateSettings(receiver);
+            receiver->setVideoStreamInfo(receiver->name().startsWith(QStringLiteral("cameraVideo")) ? nullptr : info);
+            if (_updateSettings(receiver)) {
+                changedReceivers.append(receiver);
+            }
         }
     } else {
         for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
             receiver->setVideoStreamInfo(nullptr);
-            changed |= _updateSettings(receiver);
+            if (_updateSettings(receiver)) {
+                changedReceivers.append(receiver);
+            }
         }
     }
 
-    if (changed) {
-        emit hasVideoChanged();
-        emit isStreamSourceChanged();
-        emit isAutoStreamChanged();
+    emit hasVideoChanged();
+    emit isStreamSourceChanged();
+    emit isAutoStreamChanged();
+    if (!changedReceivers.isEmpty()) {
 
         if (hasVideo()) {
-            _restartAllVideos();
+            for (VideoReceiver* receiver : std::as_const(changedReceivers)) {
+                _restartVideo(receiver);
+            }
         } else {
             stopVideo();
         }
@@ -555,7 +587,7 @@ bool VideoManager::_updateUVC(VideoReceiver * /*receiver*/)
 
     const QString oldUvcVideoSrcID = _uvcVideoSourceID;
 
-    if (!UVCReceiver::enabled() || !hasVideo() || isStreamSource()) {
+    if (!UVCReceiver::enabled() || !_videoSettings->streamConfigured() || isStreamSource()) {
         _uvcVideoSourceID = QString();
     } else {
         _uvcVideoSourceID = UVCReceiver::getSourceId();
@@ -689,20 +721,36 @@ bool VideoManager::_updateSettings(VideoReceiver *receiver)
         return settingsChanged;
     }
 
-    settingsChanged |= _updateUVC(receiver);
-    settingsChanged |= _updateAutoStream(receiver);
+    const int camera =
+        receiver->name().startsWith(QStringLiteral("cameraVideo")) ? receiver->name().right(1).toInt() : 1;
+    if (camera > _videoSettings->numberOfCameras()->rawValue().toInt()) {
+        return _updateVideoUri(receiver, QString()) || settingsChanged;
+    }
+    if (camera == 1) {
+        settingsChanged |= _updateUVC(receiver);
+        settingsChanged |= _updateAutoStream(receiver);
+    }
 
-    const QString source = _videoSettings->videoSource()->rawValue().toString();
+    const QString source = _videoSettings->cameraFact(QStringLiteral("videoSource"), camera)->rawValue().toString();
     if (source == VideoSettings::videoSourceUDPH264) {
-        settingsChanged |= _updateVideoUri(receiver, QStringLiteral("udp://%1").arg(_videoSettings->udpUrl()->rawValue().toString()));
+        settingsChanged |= _updateVideoUri(
+            receiver, QStringLiteral("udp://%1")
+                          .arg(_videoSettings->cameraFact(QStringLiteral("udpUrl"), camera)->rawValue().toString()));
     } else if (source == VideoSettings::videoSourceUDPH265) {
-        settingsChanged |= _updateVideoUri(receiver, QStringLiteral("udp265://%1").arg(_videoSettings->udpUrl()->rawValue().toString()));
+        settingsChanged |= _updateVideoUri(
+            receiver, QStringLiteral("udp265://%1")
+                          .arg(_videoSettings->cameraFact(QStringLiteral("udpUrl"), camera)->rawValue().toString()));
     } else if (source == VideoSettings::videoSourceMPEGTS) {
-        settingsChanged |= _updateVideoUri(receiver, QStringLiteral("mpegts://%1").arg(_videoSettings->udpUrl()->rawValue().toString()));
+        settingsChanged |= _updateVideoUri(
+            receiver, QStringLiteral("mpegts://%1")
+                          .arg(_videoSettings->cameraFact(QStringLiteral("udpUrl"), camera)->rawValue().toString()));
     } else if (source == VideoSettings::videoSourceRTSP) {
-        settingsChanged |= _updateVideoUri(receiver, _videoSettings->rtspUrl()->rawValue().toString());
+        settingsChanged |= _updateVideoUri(
+            receiver, _videoSettings->cameraFact(QStringLiteral("rtspUrl"), camera)->rawValue().toString());
     } else if (source == VideoSettings::videoSourceTCP) {
-        settingsChanged |= _updateVideoUri(receiver, QStringLiteral("tcp://%1").arg(_videoSettings->tcpUrl()->rawValue().toString()));
+        settingsChanged |= _updateVideoUri(
+            receiver, QStringLiteral("tcp://%1")
+                          .arg(_videoSettings->cameraFact(QStringLiteral("tcpUrl"), camera)->rawValue().toString()));
     } else if (source == VideoSettings::videoSource3DRSolo) {
         settingsChanged |= _updateVideoUri(receiver, QStringLiteral("udp://0.0.0.0:5600"));
     } else if (source == VideoSettings::videoSourceParrotDiscovery) {
@@ -717,7 +765,9 @@ bool VideoManager::_updateSettings(VideoReceiver *receiver)
         settingsChanged |= _updateVideoUri(receiver, QString());
     } else {
         settingsChanged |= _updateVideoUri(receiver, QString());
-        if (!isUvc()) {
+        if (UVCReceiver::deviceExists(source)) {
+            UVCReceiver::checkPermission();
+        } else {
             qCCritical(VideoManagerLog) << "Video source URI \"" << source << "\" is not supported. Please add support!";
         }
     }
@@ -758,7 +808,7 @@ void VideoManager::_setActiveVehicle(Vehicle *vehicle)
         }
 
         for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
-            if (_activeVehicle->cameraManager()) {
+            if (_activeVehicle->cameraManager() && !receiver->name().startsWith(QStringLiteral("cameraVideo"))) {
                 if (receiver->isThermal()) {
                     receiver->setVideoStreamInfo(_activeVehicle->cameraManager()->thermalStreamInstance());
                 } else {
@@ -824,10 +874,44 @@ void VideoManager::stopVideo()
     }
 }
 
+void VideoManager::pauseCameraVideo(int camera)
+{
+    if (camera < 1 || camera > 4) {
+        return;
+    }
+    const QString streamName = camera == 1 ? QStringLiteral("videoContent")
+                                           : QStringLiteral("cameraVideo%1").arg(camera);
+    for (VideoReceiver* receiver : std::as_const(_videoReceivers)) {
+        if (receiver->name() == streamName || (camera == 1 && receiver->isThermal())) {
+            _windowChangingReceivers.insert(receiver);
+            _stopReceiver(receiver);
+        }
+    }
+}
+
+void VideoManager::resumeCameraVideo(int camera)
+{
+    if (camera < 1 || camera > 4) {
+        return;
+    }
+    const QString streamName = camera == 1 ? QStringLiteral("videoContent")
+                                           : QStringLiteral("cameraVideo%1").arg(camera);
+    for (VideoReceiver* receiver : std::as_const(_videoReceivers)) {
+        if (receiver->name() == streamName || (camera == 1 && receiver->isThermal())) {
+            _windowChangingReceivers.remove(receiver);
+            _restartVideo(receiver);
+        }
+    }
+}
+
 void VideoManager::_startReceiver(VideoReceiver *receiver)
 {
     if (!receiver) {
         qCDebug(VideoManagerLog) << "VideoReceiver is NULL";
+        return;
+    }
+
+    if (_windowChangingReceivers.contains(receiver)) {
         return;
     }
 
@@ -841,8 +925,12 @@ void VideoManager::_startReceiver(VideoReceiver *receiver)
         return;
     }
 
-    const QString source = _videoSettings->videoSource()->rawValue().toString();
-    const uint32_t timeout = ((source == VideoSettings::videoSourceRTSP) ? _videoSettings->rtspTimeout()->rawValue().toUInt() : 3);
+    if (!hasVideo() || (_activeVehicle && !_activeVehicle->armed()
+                       && _videoSettings->disableWhenDisarmed()->rawValue().toBool())) {
+        return;
+    }
+    const uint32_t timeout =
+        (receiver->uri().startsWith(QStringLiteral("rtsp")) ? _videoSettings->rtspTimeout()->rawValue().toUInt() : 3);
 
     receiver->start(timeout);
 }
@@ -914,14 +1002,19 @@ void VideoManager::_initVideoReceiver(VideoReceiver *receiver, QQuickWindow *win
     (void) connect(receiver, &VideoReceiver::streamingChanged, this, [this, receiver](bool active) {
         qCDebug(VideoManagerLog) << "Video" << receiver->name() << "streaming changed, active:" << (active ? "yes" : "no");
         if (!receiver->isThermal()) {
-            _streaming = active;
+            if (active) {
+                _streamingReceivers.insert(receiver);
+            } else {
+                _streamingReceivers.remove(receiver);
+            }
+            _streaming = !_streamingReceivers.isEmpty();
             emit streamingChanged();
         }
     });
 
     (void) connect(receiver, &VideoReceiver::decodingChanged, this, [this, receiver](bool active) {
         qCDebug(VideoManagerLog) << "Video" << receiver->name() << "decoding changed, active:" << (active ? "yes" : "no");
-        if (!receiver->isThermal()) {
+        if (receiver->name() == QStringLiteral("videoContent")) {
             _decoding = active;
             emit decodingChanged();
         }
@@ -930,8 +1023,13 @@ void VideoManager::_initVideoReceiver(VideoReceiver *receiver, QQuickWindow *win
     (void) connect(receiver, &VideoReceiver::recordingChanged, this, [this, receiver](bool active) {
         qCDebug(VideoManagerLog) << "Video" << receiver->name() << "recording changed, active:" << (active ? "yes" : "no");
         if (!receiver->isThermal()) {
-            _recording = active;
-            if (!active) {
+            if (active) {
+                _recordingReceivers.insert(receiver);
+            } else {
+                _recordingReceivers.remove(receiver);
+            }
+            _recording = !_recordingReceivers.isEmpty();
+            if (!active && receiver->name() == QStringLiteral("videoContent")) {
                 _subtitleWriter->stopCapturingTelemetry();
             }
             emit recordingChanged(_recording);
@@ -940,14 +1038,14 @@ void VideoManager::_initVideoReceiver(VideoReceiver *receiver, QQuickWindow *win
 
     (void) connect(receiver, &VideoReceiver::recordingStarted, this, [this, receiver](const QString &filename) {
         qCDebug(VideoManagerLog) << "Video" << receiver->name() << "recording started";
-        if (!receiver->isThermal()) {
+        if (receiver->name() == QStringLiteral("videoContent")) {
             _subtitleWriter->startCapturingTelemetry(filename, videoSize());
         }
     });
 
     (void) connect(receiver, &VideoReceiver::videoSizeChanged, this, [this, receiver](QSize size) {
         qCDebug(VideoManagerLog) << "Video" << receiver->name() << "resized. New resolution:" << size.width() << "x" << size.height();
-        if (!receiver->isThermal()) {
+        if (receiver->name() == QStringLiteral("videoContent")) {
             _videoSize = size;
             emit videoSizeChanged();
             emit aspectRatioChanged();

@@ -13,6 +13,7 @@ Button {
     icon.color:     textColor
 
     property color textColor: checked || pressed ? qgcPal.buttonHighlightText : qgcPal.buttonText
+    property bool preserveIconColors: false
     property bool expandable: false
     property bool expanded:   false
 
@@ -33,6 +34,7 @@ Button {
         spacing: ScreenTools.defaultFontPixelWidth
 
         QGCColoredImage {
+            preserveColors: control.preserveIconColors
             source: control.icon.source
             color:  control.icon.color
             width:  ScreenTools.defaultFontPixelHeight
