@@ -6,6 +6,8 @@
         <file alias="NanumGothic-Bold">resources/fonts/NanumGothic-Bold.ttf</file>
     </qresource>
     <qresource prefix="/res">
+        <file alias="camera-undock.svg">resources/icons/camera-undock.svg</file>
+        <file alias="camera-dock.svg">resources/icons/camera-dock.svg</file>
         <file alias="BingNoTileBytes.dat">resources/BingNoTileBytes.dat</file>
         <file alias="CameraGimbal.png">resources/CameraGimbal.png</file>
         <file alias="chevron-double-right.svg">resources/chevron-double-right.svg</file>

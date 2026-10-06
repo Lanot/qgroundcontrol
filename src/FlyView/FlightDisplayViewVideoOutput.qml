@@ -7,8 +7,10 @@ VideoOutput {
     id: videoOutput
     objectName: "videoContent"
 
+    property bool alignTop: QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1
+
     transform: Translate {
-        y: QGroundControl.settingsManager.videoSettings.numberOfCameras.rawValue > 1 ? -Math.max(0, videoOutput.contentRect.y) : 0
+        y: videoOutput.alignTop ? -Math.max(0, videoOutput.contentRect.y) : 0
     }
 
     // Do NOT set `orientation` here — VideoOutput composes orientation on top of the

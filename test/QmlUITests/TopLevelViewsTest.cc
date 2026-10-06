@@ -477,6 +477,9 @@ void TopLevelViewsTest::_testCameraLayoutAndWindows()
         QTRY_COMPARE(tile->height(), view->height());
         QTRY_COMPARE(tile->x(), (camera - 1) * tile->width());
         QTRY_COMPARE(tile->y(), 0.0);
+        auto* button = tile->findChild<QQuickItem*>(QStringLiteral("cameraWindowButton%1").arg(camera));
+        QVERIFY(button);
+        QTRY_VERIFY(!button->isVisible());
     }
 
     auto* panel = _window->findChild<QQuickItem*>(QStringLiteral("flyVideoPipView"));
@@ -495,6 +498,57 @@ void TopLevelViewsTest::_testCameraLayoutAndWindows()
         QVERIFY(panel->setProperty("_pipHeight", savedHeight));
     }
 
+    QVERIFY(QMetaObject::invokeMethod(panel, "_swapPip"));
+    QTRY_VERIFY(view->property("mainVideoLayout").toBool());
+    QTRY_COMPARE(primary->width(), view->width());
+    QTRY_VERIFY(primary->height() > view->height() * 0.75);
+    for (int camera = 2; camera <= 4; ++camera) {
+        auto* tile = _window->findChild<QQuickItem*>(QStringLiteral("cameraTile%1").arg(camera));
+        QVERIFY(tile);
+        QTRY_COMPARE(tile->y(), primary->height());
+        auto* button = tile->findChild<QQuickItem*>(QStringLiteral("cameraWindowButton%1").arg(camera));
+        QVERIFY(button);
+        QTRY_VERIFY(button->isVisible());
+        QTRY_VERIFY(tile->height() < view->height() * 0.25);
+        QTRY_COMPARE(tile->y() + tile->height(), view->height());
+    }
+    auto* previewRow = _window->findChild<QQuickItem*>(QStringLiteral("cameraPreviewRow"));
+    auto* widthHandle = _window->findChild<QQuickItem*>(QStringLiteral("cameraPreviewWidthHandle"));
+    auto* heightHandle = _window->findChild<QQuickItem*>(QStringLiteral("cameraPreviewHeightHandle"));
+    auto* cornerHandle = _window->findChild<QQuickItem*>(QStringLiteral("cameraPreviewCornerHandle"));
+    QVERIFY(previewRow);
+    QVERIFY(widthHandle);
+    QVERIFY(heightHandle);
+    QVERIFY(cornerHandle);
+    const auto dragHandle = [this](QQuickItem* handle, const QPoint& delta) {
+        const QPoint start = handle->mapToScene(QPointF(handle->width() / 2, handle->height() / 2)).toPoint();
+        QTest::mousePress(_window, Qt::LeftButton, Qt::NoModifier, start);
+        QTRY_VERIFY(handle->property("pressed").toBool());
+        QTest::mouseMove(_window, start + delta);
+        QTest::mouseRelease(_window, Qt::LeftButton, Qt::NoModifier, start + delta);
+    };
+    QVERIFY(widthHandle->isVisible());
+    const qreal initialRowWidth = previewRow->width();
+    const qreal initialRowHeight = previewRow->height();
+    dragHandle(widthHandle, QPoint(20, 0));
+    QTRY_VERIFY(previewRow->width() > initialRowWidth);
+    QTRY_COMPARE(previewRow->height(), initialRowHeight);
+    const qreal widenedRowWidth = previewRow->width();
+    dragHandle(heightHandle, QPoint(0, -20));
+    QTRY_VERIFY(previewRow->height() > initialRowHeight);
+    QTRY_COMPARE(previewRow->width(), widenedRowWidth);
+    const qreal rowAspectRatio = previewRow->width() / previewRow->height();
+    dragHandle(cornerHandle, QPoint(20, 0));
+    QTRY_VERIFY(previewRow->width() > widenedRowWidth);
+    QTRY_VERIFY(qAbs(previewRow->width() / previewRow->height() - rowAspectRatio) < 0.001);
+
+    QVERIFY(QMetaObject::invokeMethod(panel, "_swapPip"));
+    QTRY_VERIFY(!view->property("mainVideoLayout").toBool());
+    QTRY_COMPARE(primary->width(), view->width() / 4);
+
+    QVERIFY(QMetaObject::invokeMethod(panel, "_swapPip"));
+    QTRY_VERIFY(view->property("mainVideoLayout").toBool());
+
     QList<QQuickWindow*> cameraWindows;
     QList<QQuickItem*> outputs;
     for (int camera = 1; camera <= 4; ++camera) {
@@ -506,7 +560,9 @@ void TopLevelViewsTest::_testCameraLayoutAndWindows()
         QVERIFY(window);
         QVERIFY(tile);
         QVERIFY(output);
-        QVERIFY(QMetaObject::invokeMethod(window, "popOut"));
+        auto* popOutButton = _window->findChild<QQuickItem*>(QStringLiteral("cameraWindowButton%1").arg(camera));
+        QVERIFY(popOutButton);
+        QVERIFY(QMetaObject::invokeMethod(popOutButton, "clicked"));
         QTRY_VERIFY(window->isVisible());
         QTRY_COMPARE(tile->window(), window);
         QTRY_COMPARE(output->window(), window);
@@ -521,8 +577,16 @@ void TopLevelViewsTest::_testCameraLayoutAndWindows()
     QTRY_VERIFY(!cameraWindows.last()->property("detached").toBool());
     settings->numberOfCameras()->setRawValue(4);
     for (int index = 0; index < cameraWindows.size(); ++index) {
-        cameraWindows[index]->close();
+        if (index == 0) {
+            auto* dockButton = primary->findChild<QQuickItem*>(QStringLiteral("cameraWindowButton1"));
+            QVERIFY(dockButton);
+            QVERIFY(QMetaObject::invokeMethod(dockButton, "clicked"));
+        } else {
+            cameraWindows[index]->close();
+        }
         QTRY_VERIFY(!cameraWindows[index]->property("detached").toBool());
         QTRY_COMPARE(outputs[index]->window(), _window);
     }
+    QVERIFY(QMetaObject::invokeMethod(panel, "_swapPip"));
+    QTRY_VERIFY(!view->property("mainVideoLayout").toBool());
 }

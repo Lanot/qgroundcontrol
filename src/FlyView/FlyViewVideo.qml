@@ -48,29 +48,12 @@ Item {
         id:             videoStreaming
         anchors.fill:   parent
         useSmallFont:   _root.pipState.state !== _root.pipState.fullState
+        mainVideoLayout: _root.pipState.state === _root.pipState.fullState
+        resizeOverlayParent: _root.parent
         visible:        QGroundControl.videoManager.hasVideo
     }
 
-    QGCLabel {
-        text: qsTr("Double-click to exit full screen")
-        font.pointSize: ScreenTools.largeFontPointSize
-        visible: QGroundControl.videoManager.fullScreen
-        anchors.centerIn: parent
 
-        onVisibleChanged: {
-            if (visible) {
-                labelAnimation.start()
-            }
-        }
-
-        PropertyAnimation on opacity {
-            id: labelAnimation
-            duration: 10000
-            from: 1.0
-            to: 0.0
-            easing.type: Easing.InExpo
-        }
-    }
 
     OnScreenGimbalController {
         id:                      onScreenGimbalController
@@ -103,7 +86,7 @@ Item {
         property bool _doubleClicked: false
         readonly property real _dragThreshold: 10
 
-        // Defer single-click handling so a double-click (open separate window) doesn't also
+        // Defer single-click handling so a double-click doesn't also
         // fire an unintended gimbal click-to-point/tracking command on its first click.
         Timer {
             id:         singleClickTimer
@@ -124,7 +107,6 @@ Item {
             // onReleased, so flag it to prevent re-arming the single-click timer.
             _doubleClicked = true
             singleClickTimer.stop()
-            videoStreaming.popOutPrimaryVideo()
         }
 
         onPressed: (mouse) => {

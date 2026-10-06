@@ -14,6 +14,38 @@ Item {
     objectName: "cameraVideoView"
 
     property bool useSmallFont: true
+    property bool mainVideoLayout: false
+    property Item resizeOverlayParent: root
+    property real previewWidthRatio: Math.max(1, _cameraCount - 1) * 0.16
+    property real previewHeightRatio: -1
+    readonly property real _previewRowWidth: Math.min(width * 0.98, Math.max(width * 0.1, width * previewWidthRatio))
+    readonly property real _thumbnailHeight: mainVideoLayout && _cameraCount > 1
+        ? Math.min(height * 0.5, Math.max(height * 0.05, previewHeightRatio < 0
+            ? Math.min(height * 0.2, _previewRowWidth / (_cameraCount - 1) * 9 / 16)
+            : height * previewHeightRatio)) : 0
+    readonly property real _thumbnailWidth: _previewRowWidth / Math.max(1, _cameraCount - 1)
+
+    function resizePreviewRow(rowWidth, rowHeight) {
+        if (width <= 0 || height <= 0) return
+        previewWidthRatio = Math.max(0.1, Math.min(0.98, rowWidth / width))
+        previewHeightRatio = Math.max(0.05, Math.min(0.5, rowHeight / height))
+    }
+
+    function tileWidth(cameraNumber) {
+        return mainVideoLayout ? (cameraNumber === 1 ? width : _thumbnailWidth) : width / _columns
+    }
+    function tileHeight(cameraNumber) {
+        return mainVideoLayout ? (cameraNumber === 1 ? height - _thumbnailHeight : _thumbnailHeight) : height / _rows
+    }
+    function tileX(cameraNumber) {
+        if (mainVideoLayout) {
+            return cameraNumber === 1 ? 0 : (width - (_cameraCount - 1) * _thumbnailWidth) / 2 + (cameraNumber - 2) * _thumbnailWidth
+        }
+        return (cameraNumber - 1) % _columns * tileWidth(cameraNumber)
+    }
+    function tileY(cameraNumber) {
+        return mainVideoLayout ? (cameraNumber === 1 ? 0 : height - _thumbnailHeight) : Math.floor((cameraNumber - 1) / _columns) * tileHeight(cameraNumber)
+    }
     readonly property var _videoSettings: QGroundControl.settingsManager.videoSettings
     readonly property int _cameraCount: _videoSettings.numberOfCameras.rawValue
     readonly property bool _listMode: _videoSettings.cameraDisplayMode.rawValue === 1
@@ -48,23 +80,15 @@ Item {
         return videoBackground.getHeight()
     }
 
-    function popOutPrimaryVideo() {
-        primaryWindow.popOut()
-    }
-
     property double _thermalHeightFactor: 0.85 //-- TODO
 
     Item {
         id: primaryTile
         objectName: "cameraTile1"
-        width: primaryWindow.detached ? parent.width : root.width / root._columns
-        height: primaryWindow.detached ? parent.height : root.height / root._rows
+        width: primaryWindow.detached ? parent.width : root.tileWidth(1)
+        height: primaryWindow.detached ? parent.height : root.tileHeight(1)
         clip: true
 
-        TapHandler {
-            enabled: !ScreenTools.isMobile && !primaryWindow.detached
-            onDoubleTapped: root.popOutPrimaryVideo()
-        }
         CameraWindowButton { windowControl: primaryWindow }
         QGCLabel {
             anchors.top: parent.top
@@ -153,6 +177,7 @@ Item {
         Component {
             id: videoOutputComponent
             FlightDisplayViewVideoOutput {
+                alignTop: !root.mainVideoLayout && root._cameraCount > 1
             }
         }
         //-- UVC Video (USB Camera or Video Device)
@@ -327,16 +352,36 @@ Item {
         }
     }
 
-    component CameraWindowButton: QGCButton {
+    component CameraWindowButton: ToolButton {
+        id: windowControlButton
         required property var windowControl
         objectName: "cameraWindowButton" + windowControl.cameraNumber
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: ScreenTools.defaultFontPixelWidth
-        visible: !ScreenTools.isMobile && windowControl.detached
+        visible: !ScreenTools.isMobile && (root.mainVideoLayout || windowControl.detached)
         z: 100
-        text: qsTr("Dock")
-        onClicked: windowControl.dock()
+        width: ScreenTools.defaultFontPixelHeight * 1.6
+        height: width
+        padding: ScreenTools.defaultFontPixelWidth * 0.3
+        hoverEnabled: true
+        Accessible.name: windowControl.detached ? qsTr("Return video to main window") : qsTr("Open video in separate window")
+        ToolTip.visible: hovered
+        ToolTip.text: Accessible.name
+        ToolTip.delay: 600
+        background: Rectangle {
+            radius: ScreenTools.defaultFontPixelWidth * 0.4
+            color: Qt.rgba(0, 0, 0, windowControlButton.hovered || windowControlButton.pressed ? 0.65 : 0.3)
+            border.width: windowControlButton.activeFocus ? 1 : 0
+            border.color: "white"
+        }
+        contentItem: Image {
+            source: windowControlButton.windowControl.detached ? "/res/camera-dock.svg" : "/res/camera-undock.svg"
+            fillMode: Image.PreserveAspectFit
+            sourceSize.width: width
+            sourceSize.height: height
+        }
+        onClicked: windowControl.detached ? windowControl.dock() : windowControl.popOut()
     }
 
     component DetachedPlaceholder: Item {
@@ -344,10 +389,10 @@ Item {
         readonly property int cameraNumber: windowControl.cameraNumber
         objectName: "cameraPlaceholder" + cameraNumber
         visible: windowControl.detached && cameraNumber <= root._cameraCount
-        x: (cameraNumber - 1) % root._columns * width
-        y: Math.floor((cameraNumber - 1) / root._columns) * height
-        width: root.width / root._columns
-        height: root.height / root._rows
+        x: root.tileX(cameraNumber)
+        y: root.tileY(cameraNumber)
+        width: root.tileWidth(cameraNumber)
+        height: root.tileHeight(cameraNumber)
         Image {
             anchors.fill: parent
             source: "/res/NoVideoBackground.jpg"
@@ -390,10 +435,10 @@ Item {
             }
             return null
         }
-        x: cameraWindow.detached ? 0 : (cameraNumber - 1) % root._columns * width
-        y: cameraWindow.detached ? 0 : Math.floor((cameraNumber - 1) / root._columns) * height
-        width: cameraWindow.detached ? parent.width : root.width / root._columns
-        height: cameraWindow.detached ? parent.height : root.height / root._rows
+        x: cameraWindow.detached ? 0 : root.tileX(cameraNumber)
+        y: cameraWindow.detached ? 0 : root.tileY(cameraNumber)
+        width: cameraWindow.detached ? parent.width : root.tileWidth(cameraNumber)
+        height: cameraWindow.detached ? parent.height : root.tileHeight(cameraNumber)
         visible: cameraNumber <= root._cameraCount
         clip: true
 
@@ -402,10 +447,6 @@ Item {
             cameraNumber: cameraTile.cameraNumber
             videoItem: cameraTile
             homeParent: root
-        }
-        TapHandler {
-            enabled: !ScreenTools.isMobile && !cameraWindow.detached
-            onDoubleTapped: cameraWindow.popOut()
         }
         CameraWindowButton { windowControl: cameraWindow }
         DetachedPlaceholder {
@@ -442,6 +483,87 @@ Item {
             anchors.left: parent.left
             anchors.margins: ScreenTools.defaultFontPixelWidth
             text: qsTr("Camera #%1").arg(cameraTile.cameraNumber)
+        }
+    }
+
+    Item {
+        id: previewRowControls
+        objectName: "cameraPreviewRow"
+        parent: root.resizeOverlayParent
+        visible: root.mainVideoLayout && root._cameraCount > 1
+        x: root.mapToItem(parent, (root.width - width) / 2, root.height - height).x
+        y: root.mapToItem(parent, (root.width - width) / 2, root.height - height).y
+        width: root._previewRowWidth
+        height: root._thumbnailHeight
+        z: 200
+
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(0.8, 0.8, 0.8, 0.6)
+        }
+        component ResizeHandle: MouseArea {
+            // 0: width, 1: height, 2: proportional corner.
+            required property int resizeMode
+            preventStealing: true
+            cursorShape: resizeMode === 0 ? Qt.SizeHorCursor : (resizeMode === 1 ? Qt.SizeVerCursor : Qt.SizeBDiagCursor)
+            property real startX
+            property real startY
+            property real startWidth
+            property real startHeight
+            onPressed: (mouse) => {
+                var point = mapToItem(root, mouse.x, mouse.y)
+                startX = point.x
+                startY = point.y
+                startWidth = previewRowControls.width
+                startHeight = previewRowControls.height
+            }
+            onPositionChanged: (mouse) => {
+                if (!pressed) return
+                var point = mapToItem(root, mouse.x, mouse.y)
+                if (resizeMode === 1) {
+                    root.resizePreviewRow(startWidth, startHeight + startY - point.y)
+                } else {
+                    var newWidth = Math.max(root.width * 0.1, Math.min(root.width * 0.98, startWidth + 2 * (point.x - startX)))
+                    if (resizeMode === 2) {
+                        newWidth = Math.max(root.height * 0.05 * startWidth / startHeight,
+                            Math.min(root.height * 0.5 * startWidth / startHeight, newWidth))
+                    }
+                    root.resizePreviewRow(newWidth, resizeMode === 2 ? startHeight * newWidth / startWidth : startHeight)
+                }
+            }
+        }
+        ResizeHandle {
+            objectName: "cameraPreviewWidthHandle"
+            resizeMode: 0
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: ScreenTools.defaultFontPixelWidth
+            height: Math.max(ScreenTools.defaultFontPixelHeight, parent.height - ScreenTools.defaultFontPixelHeight * 4)
+        }
+        ResizeHandle {
+            objectName: "cameraPreviewHeightHandle"
+            resizeMode: 1
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: Math.max(0, parent.width - ScreenTools.defaultFontPixelHeight * 4)
+            height: ScreenTools.defaultFontPixelWidth
+        }
+        ResizeHandle {
+            objectName: "cameraPreviewCornerHandle"
+            resizeMode: 2
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            width: ScreenTools.defaultFontPixelHeight * 1.5
+            height: width
+            Image {
+                anchors.fill: parent
+                anchors.margins: 2
+                source: "/qmlimages/pipResize.svg"
+                fillMode: Image.PreserveAspectFit
+                rotation: 90
+            }
         }
     }
 

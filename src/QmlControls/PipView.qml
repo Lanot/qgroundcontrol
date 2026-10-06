@@ -99,6 +99,15 @@ Item {
         clip:           true
     }
 
+    Rectangle {
+        anchors.fill: parent
+        visible: _root.freeResize && _root._isExpanded
+        color: "transparent"
+        border.width: 1
+        border.color: Qt.rgba(0.8, 0.8, 0.8, 0.6)
+        z: 1
+    }
+
     MouseArea {
         id:             pipMouseArea
         anchors.fill:   parent
